@@ -83,9 +83,10 @@ for d in [df_g1, df_g4, df_g7]:
     if not d.empty and 'City/Municipality Name' in d.columns:
         all_munis.update(d['City/Municipality Name'].dropna().unique())
 
+# Add "All Abra" to the very top of the list
 muni_list = ["All Abra"] + sorted(list(all_munis))
 
-# THE MULTI-SELECT BOX
+# THE NEW MULTI-SELECT BOX
 selected_munis = st.sidebar.multiselect(
     "Select Municipalities", 
     options=muni_list,
@@ -177,10 +178,12 @@ with tsum:
         t = next((c for c in df.columns if k1 in c.upper() and (k2 in c.upper() if k2 else True)), None)
         return pd.to_numeric(df[t], errors='coerce').sum() if t else 0
 
-    # Core Calculations
     total_mr = get_val(df_g1, 'MR', 'MALE') + get_val(df_g1, 'MR', 'FEMALE') + get_val(df_g7, 'MR', 'MALE') + get_val(df_g7, 'MR', 'FEMALE')
-    total_td = get_val(df_g1, 'TD', 'MALE') + get_val(df_g1, 'TD', 'FEMALE') + get_val(df_g7, 'TD', 'MALE') + get_val(df_g7, 'TD', 'FEMALE')
-    total_hpv = get_val(df_g4, 'HPV')
+    
+    # Updated to add up ALL HPV columns in the sheet
+    total_hpv = 0
+    if not df_g4.empty:
+        total_hpv = sum(pd.to_numeric(df_g4[c], errors='coerce').sum() for c in df_g4.columns if 'HPV' in c.upper())
 
     all_schools = pd.Series(dtype=str)
     for d in [df_g1, df_g4, df_g7]:
@@ -188,33 +191,10 @@ with tsum:
         if sc and not d.empty:
             all_schools = pd.concat([all_schools, d[sc].astype(str)])
 
-    # Top Metrics
     sc1, sc2, sc3 = st.columns(3)
     sc1.metric("Combined MR (G1+G7)", f"{int(total_mr):,}")
-    sc2.metric("Total HPV (G4)", f"{int(total_hpv):,}")
+    sc2.metric("Total HPV Doses (G4)", f"{int(total_hpv):,}")
     sc3.metric("Unique Facilities Reached", f"{all_schools.nunique():,}")
-
-    st.markdown("---")
-    st.subheader("Visual Breakdown")
-    
-    # Donut Charts
-    pc1, pc2 = st.columns(2)
-    with pc1:
-        male_doses = get_val(df_g1, 'MR', 'MALE') + get_val(df_g1, 'TD', 'MALE') + get_val(df_g7, 'MR', 'MALE') + get_val(df_g7, 'TD', 'MALE')
-        female_doses = get_val(df_g1, 'MR', 'FEMALE') + get_val(df_g1, 'TD', 'FEMALE') + get_val(df_g7, 'MR', 'FEMALE') + get_val(df_g7, 'TD', 'FEMALE')
-        
-        df_gender = pd.DataFrame({'Gender': ['Male', 'Female'], 'Doses': [male_doses, female_doses]})
-        if df_gender['Doses'].sum() > 0:
-            fig_gender = px.pie(df_gender, names='Gender', values='Doses', title="MR & TD by Gender", hole=0.4, color='Gender', color_discrete_map={'Male':'#1E88E5', 'Female':'#D81B60'})
-            fig_gender.update_traces(textposition='inside', textinfo='percent+label', textfont_size=14)
-            st.plotly_chart(fig_gender, use_container_width=True, key="pie_gender")
-            
-    with pc2:
-        df_vax = pd.DataFrame({'Vaccine': ['MR', 'TD', 'HPV'], 'Doses': [total_mr, total_td, total_hpv]})
-        if df_vax['Doses'].sum() > 0:
-            fig_vax = px.pie(df_vax, names='Vaccine', values='Doses', title="Overall Vaccine Distribution", hole=0.4, color='Vaccine', color_discrete_map={'MR':'#43A047', 'TD':'#FFB300', 'HPV':'#8E24AA'})
-            fig_vax.update_traces(textposition='inside', textinfo='percent+label', textfont_size=14)
-            st.plotly_chart(fig_vax, use_container_width=True, key="pie_vax")
 
 with t1: render_vaccine_tab(df_g1, err1, "G1")
 with t7: render_vaccine_tab(df_g7, err7, "G7")
@@ -226,29 +206,48 @@ with t4:
     elif df_g4.empty:
         st.warning(f"⚠️ No data found for Grade 4 in {display_loc}.")
     else:
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
         sc_col = get_school_col(df_g4)
         c1.metric("Schools/Facilities (G4)", f"{df_g4[sc_col].nunique() if sc_col else len(df_g4):,}")
         
-        hpv_c = next((c for c in df_g4.columns if 'HPV' in c.upper()), None)
-        if hpv_c:
-            df_g4[hpv_c] = pd.to_numeric(df_g4[hpv_c], errors='coerce').fillna(0)
-            c2.metric("Total HPV", f"{int(df_g4[hpv_c].sum()):,}")
+        # Grab ALL columns that contain HPV
+        hpv_cols = [c for c in df_g4.columns if 'HPV' in c.upper()]
+        
+        if hpv_cols:
+            d1_col = hpv_cols[0]
+            d2_col = hpv_cols[1] if len(hpv_cols) > 1 else None
+            
+            df_g4[d1_col] = pd.to_numeric(df_g4[d1_col], errors='coerce').fillna(0)
+            c2.metric("Total HPV (Dose 1)", f"{int(df_g4[d1_col].sum()):,}")
+            
+            if d2_col:
+                df_g4[d2_col] = pd.to_numeric(df_g4[d2_col], errors='coerce').fillna(0)
+                c3.metric("Total HPV (Dose 2)", f"{int(df_g4[d2_col].sum()):,}")
+            else:
+                c3.metric("Total HPV (Dose 2)", "0")
             
             muni_col = 'City/Municipality Name'
             if muni_col in df_g4.columns:
-                m_hpv = df_g4.groupby(muni_col)[hpv_c].sum().reset_index()
-                m_hpv = m_hpv.rename(columns={hpv_c: 'HPV Doses'})
+                cols_to_sum = [d1_col] if not d2_col else [d1_col, d2_col]
+                m_hpv = df_g4.groupby(muni_col)[cols_to_sum].sum().reset_index()
+                
+                # Rename for clean legends
+                rename_dict = {d1_col: 'Dose 1'}
+                if d2_col: rename_dict[d2_col] = 'Dose 2'
+                m_hpv = m_hpv.rename(columns=rename_dict)
                 
                 csv_hpv = m_hpv.to_csv(index=False).encode('utf-8')
                 st.download_button(label="📥 Download Grade 4 Summary Report (CSV)", data=csv_hpv, file_name=f"G4_{display_loc.replace(' ', '_')}_summary.csv", mime='text/csv')
                 
-                fig_hpv = px.bar(m_hpv, x=muni_col, y='HPV Doses', text_auto=True, title="HPV by Municipality", color_discrete_sequence=['#8E24AA'])
+                y_cols = ['Dose 1'] if not d2_col else ['Dose 1', 'Dose 2']
+                fig_hpv = px.bar(m_hpv, x=muni_col, y=y_cols, barmode='group', text_auto=True, title="HPV Vaccinations by Municipality", color_discrete_sequence=['#8E24AA', '#E53935'])
+                fig_hpv.update_layout(legend_title_text='Dose Number', yaxis_title='Doses')
                 fig_hpv.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
                 st.plotly_chart(fig_hpv, use_container_width=True, key="hpv_plot")
         else:
             c2.metric("Total HPV", "0")
-            st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab.")
+            c3.metric("", "")
+            st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab. Please check your headers.")
 
 # --- FOOTER ---
 st.markdown("---")
