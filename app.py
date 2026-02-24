@@ -10,7 +10,7 @@ st.markdown("""
 <style>
 .custom-header {
     /* We add a semi-transparent black layer (rgba 0,0,0, 0.2) over the image URL */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
+    background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
     background-size: cover;
     background-position: 50% 55%;
     padding: 50px 20px;
@@ -342,6 +342,7 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
 
 
 
