@@ -1,13 +1,13 @@
-﻿import streamlit as st
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 
 st.set_page_config(page_title="Abra SBI Dashboard", layout="wide", page_icon="💉")
-# Add this custom HTML/CSS header block instead:
+
+# --- CUSTOM BANNER ---
 st.markdown("""
 <style>
 .custom-header {
-    /* You can replace this URL with a link to your own custom image! */
     background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
     background-size: cover;
     background-position: center;
@@ -19,7 +19,7 @@ st.markdown("""
 }
 .custom-header h1 {
     color: white !important;
-    text-shadow: 2px 2px 4px #000000; /* Adds a shadow so text is readable over any picture */
+    text-shadow: 2px 2px 4px #000000;
     margin: 0;
     padding: 0;
     font-size: 2.8rem;
@@ -37,15 +37,14 @@ st.markdown("""
     <p>Official Provincial 2025 Summary • Live Google Sheets Sync</p>
 </div>
 """, unsafe_allow_html=True)
+
+# --- DATA CONNECTION ---
 SHEET_ID = "1OkXvw0Rx8G2Pd1eeCaEe6SCi3axJ6qalbBL--1IQs7g"
 
-# --- Master Excel Downloader ---
 @st.cache_data(ttl=60)
 def load_all_data():
-    # Exporting the ENTIRE workbook as an Excel file bypasses CSV tab limitations and 404 errors
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
     try:
-        # Read all sheets into a dictionary of DataFrames at once
         dfs = pd.read_excel(url, sheet_name=None)
         return dfs, None
     except Exception as e:
@@ -57,20 +56,16 @@ if col_btn.button("🔄 Force Refresh All Data"):
     st.cache_data.clear()
     st.rerun()
 
-# Download everything
 dfs, global_err = load_all_data()
 
-# Helper function to process individual tabs
 def process_sheet(sheet_name):
     if global_err:
         return pd.DataFrame(), global_err
     if dfs is None or sheet_name not in dfs:
-        return pd.DataFrame(), f"Tab '{sheet_name}' not found. Please check spelling in Google Sheets."
+        return pd.DataFrame(), f"Tab '{sheet_name}' not found."
     
     df = dfs[sheet_name].copy()
     df.columns = df.columns.astype(str).str.strip()
-    
-    # Catch 'ABRA' regardless of extra text like 'CORDILLERA A'
     if 'Province Name' in df.columns:
         df = df[df['Province Name'].astype(str).str.upper().str.contains('ABRA', na=False)]
     return df, None
@@ -79,6 +74,7 @@ df_g1, err1 = process_sheet("Grade1")
 df_g4, err4 = process_sheet("Grade4")
 df_g7, err7 = process_sheet("Grade7")
 
+# --- TABS ---
 tsum, t1, t4, t7 = st.tabs(["📊 Summary", "📘 Grade 1", "🌸 Grade 4 (HPV)", "📗 Grade 7"])
 
 def get_school_col(df):
@@ -110,7 +106,6 @@ def render_vaccine_tab(df, err, g_label):
 
         if muni_col in df.columns and all([mr_m, mr_f, td_m, td_f]):
             m_data = df.groupby(muni_col)[[mr_m, mr_f, td_m, td_f]].sum().reset_index()
-            # Clean legend names
             m_data = m_data.rename(columns={mr_m: 'MR (Male)', td_m: 'TD (Male)', mr_f: 'MR (Female)', td_f: 'TD (Female)'})
             m_data['Total MR'] = m_data['MR (Male)'] + m_data['MR (Female)']
             m_data['Total TD'] = m_data['TD (Male)'] + m_data['TD (Female)']
@@ -119,19 +114,20 @@ def render_vaccine_tab(df, err, g_label):
             with cola:
                 fig_m = px.bar(m_data, x=muni_col, y=['MR (Male)', 'TD (Male)'], barmode='group', text_auto=True, title=f"Male Vaccinations ({g_label})")
                 fig_m.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
-                fig.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
+                fig_m.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
                 st.plotly_chart(fig_m, use_container_width=True, key=f"m_{g_label}")
             with colb:
                 fig_f = px.bar(m_data, x=muni_col, y=['MR (Female)', 'TD (Female)'], barmode='group', text_auto=True, title=f"Female Vaccinations ({g_label})")
                 fig_f.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
-                fig.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
+                fig_f.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
                 st.plotly_chart(fig_f, use_container_width=True, key=f"f_{g_label}")
             
             fig_tot = px.bar(m_data, x=muni_col, y=['Total MR', 'Total TD'], barmode='group', text_auto=True, title=f"Grand Total ({g_label})")
             fig_tot.update_layout(legend_title_text='Total Vaccines', yaxis_title='Doses')
-            fig.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
+            fig_tot.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
             st.plotly_chart(fig_tot, use_container_width=True, key=f"tot_{g_label}")
 
+# --- SUMMARY TAB ---
 with tsum:
     st.subheader("Province-wide Cumulative Totals (Abra)")
     def get_val(df, k1, k2=None):
@@ -143,7 +139,6 @@ with tsum:
                 get_val(df_g7, 'MR', 'MALE') + get_val(df_g7, 'MR', 'FEMALE'))
     total_hpv = get_val(df_g4, 'HPV')
 
-    # Calculate unique schools accurately across all sheets
     all_schools = pd.Series(dtype=str)
     for d in [df_g1, df_g4, df_g7]:
         sc = get_school_col(d)
@@ -158,6 +153,7 @@ with tsum:
 with t1: render_vaccine_tab(df_g1, err1, "G1")
 with t7: render_vaccine_tab(df_g7, err7, "G7")
 
+# --- GRADE 4 TAB ---
 with t4:
     if err4:
         st.error(f"Sheet Error: {err4}")
@@ -178,22 +174,19 @@ with t4:
                 m_hpv = df_g4.groupby(muni_col)[hpv_c].sum().reset_index()
                 m_hpv = m_hpv.rename(columns={hpv_c: 'HPV Doses'})
                 fig_hpv = px.bar(m_hpv, x=muni_col, y='HPV Doses', text_auto=True, title="HPV by Municipality", color_discrete_sequence=['#e84393'])
-                fig.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
+                fig_hpv.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
                 st.plotly_chart(fig_hpv, use_container_width=True, key="hpv_unique_plot")
         else:
             c2.metric("Total HPV (Abra)", "0")
-
             st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab. Please check your Google Sheet headers.")
 
 # --- FOOTER ---
-st.markdown("---") # Draws a neat horizontal line
+st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #888888; padding: 10px;'>
-        <p>Developed by <strong>JangTV</strong></p>
+        <p>Developed by <strong>Data Controller III</strong></p>
     </div>
     """, 
     unsafe_allow_html=True
 )
-
-
