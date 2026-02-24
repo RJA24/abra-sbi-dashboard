@@ -11,7 +11,7 @@ st.markdown("""
 .custom-header {
     background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
     background-size: cover;
-    background-position: center;
+    background-position: 50% 55%;
     padding: 50px 20px;
     border-radius: 10px;
     text-align: center;
@@ -83,28 +83,32 @@ for d in [df_g1, df_g4, df_g7]:
     if not d.empty and 'City/Municipality Name' in d.columns:
         all_munis.update(d['City/Municipality Name'].dropna().unique())
 
-muni_list = sorted(list(all_munis))
+# Add "All Abra" to the very top of the list
+muni_list = ["All Abra"] + sorted(list(all_munis))
 
 # THE NEW MULTI-SELECT BOX
 selected_munis = st.sidebar.multiselect(
-    "Select Municipalities (Leave blank for all)", 
+    "Select Municipalities", 
     options=muni_list,
-    default=[]
+    default=["All Abra"]
 )
 
-# Dynamic Display Name for titles and downloads
-if not selected_munis:
+# Dynamic Display Name and Filter Logic
+if not selected_munis or "All Abra" in selected_munis:
     display_loc = "All Abra"
+    active_filter = [] # Empty means we do not filter the dataframe
 elif len(selected_munis) <= 2:
     display_loc = " & ".join(selected_munis)
+    active_filter = selected_munis
 else:
     display_loc = f"{len(selected_munis)} Municipalities"
+    active_filter = selected_munis
 
 # Updated filter function using .isin() for multiple selections
 def filter_df(df):
-    if not selected_munis or df.empty or 'City/Municipality Name' not in df.columns:
+    if not active_filter or df.empty or 'City/Municipality Name' not in df.columns:
         return df
-    return df[df['City/Municipality Name'].isin(selected_munis)]
+    return df[df['City/Municipality Name'].isin(active_filter)]
 
 df_g1 = filter_df(df_g1)
 df_g4 = filter_df(df_g4)
@@ -148,7 +152,7 @@ def render_vaccine_tab(df, err, g_label):
 
             # Download Button
             csv = m_data.to_csv(index=False).encode('utf-8')
-            st.download_button(label=f"📥 Download {g_label} Summary Report (CSV)", data=csv, file_name=f"{g_label}_{display_loc}_summary.csv", mime='text/csv')
+            st.download_button(label=f"📥 Download {g_label} Summary Report (CSV)", data=csv, file_name=f"{g_label}_{display_loc.replace(' ', '_')}_summary.csv", mime='text/csv')
 
             st.markdown("<br>", unsafe_allow_html=True)
             cola, colb = st.columns(2)
@@ -216,7 +220,7 @@ with t4:
                 
                 # Download Button for HPV
                 csv_hpv = m_hpv.to_csv(index=False).encode('utf-8')
-                st.download_button(label="📥 Download Grade 4 Summary Report (CSV)", data=csv_hpv, file_name=f"G4_{display_loc}_summary.csv", mime='text/csv')
+                st.download_button(label="📥 Download Grade 4 Summary Report (CSV)", data=csv_hpv, file_name=f"G4_{display_loc.replace(' ', '_')}_summary.csv", mime='text/csv')
                 
                 fig_hpv = px.bar(m_hpv, x=muni_col, y='HPV Doses', text_auto=True, title="HPV by Municipality", color_discrete_sequence=['#8E24AA'])
                 fig_hpv.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
@@ -224,6 +228,7 @@ with t4:
         else:
             c2.metric("Total HPV", "0")
             st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab.")
+
 # --- FOOTER ---
 st.markdown("---")
 st.markdown(
@@ -235,21 +240,3 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
