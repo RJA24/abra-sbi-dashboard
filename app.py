@@ -83,17 +83,15 @@ for d in [df_g1, df_g4, df_g7]:
     if not d.empty and 'City/Municipality Name' in d.columns:
         all_munis.update(d['City/Municipality Name'].dropna().unique())
 
-# Add "All Abra" to the very top of the list
 muni_list = ["All Abra"] + sorted(list(all_munis))
 
-# THE NEW MULTI-SELECT BOX
+# THE MULTI-SELECT BOX
 selected_munis = st.sidebar.multiselect(
     "Select Municipalities", 
     options=muni_list,
     default=["All Abra"]
 )
 
-# Dynamic Display Name and Filter Logic
 if not selected_munis or "All Abra" in selected_munis:
     display_loc = "All Abra"
     active_filter = [] 
@@ -114,7 +112,8 @@ df_g4 = filter_df(df_g4)
 df_g7 = filter_df(df_g7)
 
 # --- TABS ---
-tsum, t1, t4, t7 = st.tabs(["📊 Summary", "📘 Grade 1", "🌸 Grade 4 (HPV)", "📗 Grade 7"])
+# NOTE: We added "🗺️ Map View" right next to the Summary!
+tsum, tmap, t1, t4, t7 = st.tabs(["📊 Summary", "🗺️ Map View", "📘 Grade 1", "🌸 Grade 4 (HPV)", "📗 Grade 7"])
 
 def get_school_col(df):
     return next((c for c in df.columns if 'SCHOOL ID' in c.upper() or 'FACILITY' in c.upper() or 'SCHOOL NAME' in c.upper()), None)
@@ -179,8 +178,8 @@ with tsum:
         return pd.to_numeric(df[t], errors='coerce').sum() if t else 0
 
     total_mr = get_val(df_g1, 'MR', 'MALE') + get_val(df_g1, 'MR', 'FEMALE') + get_val(df_g7, 'MR', 'MALE') + get_val(df_g7, 'MR', 'FEMALE')
+    total_td = get_val(df_g1, 'TD', 'MALE') + get_val(df_g1, 'TD', 'FEMALE') + get_val(df_g7, 'TD', 'MALE') + get_val(df_g7, 'TD', 'FEMALE')
     
-    # Updated to add up ALL HPV columns in the sheet
     total_hpv = 0
     if not df_g4.empty:
         total_hpv = sum(pd.to_numeric(df_g4[c], errors='coerce').sum() for c in df_g4.columns if 'HPV' in c.upper())
@@ -196,6 +195,90 @@ with tsum:
     sc2.metric("Total HPV Doses (G4)", f"{int(total_hpv):,}")
     sc3.metric("Unique Facilities Reached", f"{all_schools.nunique():,}")
 
+    st.markdown("---")
+    st.subheader("Visual Breakdown")
+    
+    pc1, pc2 = st.columns(2)
+    with pc1:
+        male_doses = get_val(df_g1, 'MR', 'MALE') + get_val(df_g1, 'TD', 'MALE') + get_val(df_g7, 'MR', 'MALE') + get_val(df_g7, 'TD', 'MALE')
+        female_doses = get_val(df_g1, 'MR', 'FEMALE') + get_val(df_g1, 'TD', 'FEMALE') + get_val(df_g7, 'MR', 'FEMALE') + get_val(df_g7, 'TD', 'FEMALE')
+        
+        df_gender = pd.DataFrame({'Gender': ['Male', 'Female'], 'Doses': [male_doses, female_doses]})
+        if df_gender['Doses'].sum() > 0:
+            fig_gender = px.pie(df_gender, names='Gender', values='Doses', title="MR & TD by Gender", hole=0.4, color='Gender', color_discrete_map={'Male':'#1E88E5', 'Female':'#D81B60'})
+            fig_gender.update_traces(textposition='inside', textinfo='percent+label', textfont_size=14)
+            st.plotly_chart(fig_gender, use_container_width=True, key="pie_gender")
+            
+    with pc2:
+        df_vax = pd.DataFrame({'Vaccine': ['MR', 'TD', 'HPV'], 'Doses': [total_mr, total_td, total_hpv]})
+        if df_vax['Doses'].sum() > 0:
+            fig_vax = px.pie(df_vax, names='Vaccine', values='Doses', title="Overall Vaccine Distribution", hole=0.4, color='Vaccine', color_discrete_map={'MR':'#43A047', 'TD':'#FFB300', 'HPV':'#8E24AA'})
+            fig_vax.update_traces(textposition='inside', textinfo='percent+label', textfont_size=14)
+            st.plotly_chart(fig_vax, use_container_width=True, key="pie_vax")
+
+# --- MAP TAB ---
+with tmap:
+    st.subheader(f"📍 Vaccination Density Map ({display_loc})")
+    st.markdown("Geographic distribution of all administered doses (MR, TD, and HPV combined). Larger bubbles indicate higher vaccination counts.")
+    
+    # Internal Coordinate System for Abra Municipalities
+    ABRA_COORDS = {
+        "BANGUED": (17.5962, 120.6133), "BANGUED (CAPITAL)": (17.5962, 120.6133),
+        "BOLINEY": (17.3820, 120.9405), "BUCAY": (17.5255, 120.7302),
+        "BUCLOC": (17.4431, 120.8404), "DAGUIOMAN": (17.4475, 120.9324),
+        "DANGLAS": (17.6586, 120.6558), "DOLORES": (17.6475, 120.7107),
+        "LA PAZ": (17.6698, 120.6725), "LACUB": (17.6669, 120.9439),
+        "LAGANGILANG": (17.6167, 120.7333), "LAGAYAN": (17.7289, 120.7364),
+        "LANGIDEN": (17.5833, 120.5667), "LICUAN-BAAY": (17.5681, 120.8872),
+        "LICUAN-BAAY (LICUAN)": (17.5681, 120.8872), "LUBA": (17.3197, 120.6975),
+        "MALIBCONG": (17.5639, 120.9908), "MANABO": (17.4333, 120.7000),
+        "PEÑARRUBIA": (17.5656, 120.6389), "PIDIGAN": (17.5750, 120.5833),
+        "PILAR": (17.4167, 120.5833), "SALLAPADAN": (17.4589, 120.7631),
+        "SAN ISIDRO": (17.4667, 120.6000), "SAN JUAN": (17.7122, 120.7411),
+        "SAN QUINTIN": (17.5447, 120.5217), "TAYUM": (17.6000, 120.6500),
+        "TINEG": (17.7806, 120.9403), "TUBO": (17.2289, 120.7936),
+        "VILLAVICIOSA": (17.4372, 120.6275)
+    }
+    
+    map_df = pd.DataFrame()
+    for d in [df_g1, df_g4, df_g7]:
+        if not d.empty and 'City/Municipality Name' in d.columns:
+            d_copy = d.copy()
+            d_copy['Row Total'] = d_copy.select_dtypes(include='number').sum(axis=1)
+            agg = d_copy.groupby('City/Municipality Name')['Row Total'].sum().reset_index()
+            map_df = pd.concat([map_df, agg])
+            
+    if not map_df.empty:
+        map_data = map_df.groupby('City/Municipality Name')['Row Total'].sum().reset_index()
+        map_data = map_data[map_data['Row Total'] > 0] 
+        
+        map_data['Lat'] = map_data['City/Municipality Name'].str.strip().str.upper().map(lambda x: ABRA_COORDS.get(x, (None, None))[0])
+        map_data['Lon'] = map_data['City/Municipality Name'].str.strip().str.upper().map(lambda x: ABRA_COORDS.get(x, (None, None))[1])
+        
+        map_data_clean = map_data.dropna(subset=['Lat', 'Lon'])
+        
+        if not map_data_clean.empty:
+            # Create a glowing dark-theme bubble map!
+            fig_map = px.scatter_mapbox(
+                map_data_clean, 
+                lat="Lat", lon="Lon", 
+                size="Row Total", 
+                hover_name="City/Municipality Name",
+                color="Row Total", 
+                color_continuous_scale="Plasma",
+                size_max=40,
+                zoom=8.5, 
+                center={"lat": 17.58, "lon": 120.61},
+                mapbox_style="carto-darkmatter"
+            )
+            fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+            st.plotly_chart(fig_map, use_container_width=True)
+        else:
+            st.info("No matching map coordinates found for the selected area.")
+    else:
+        st.warning("No data available to map yet.")
+
+
 with t1: render_vaccine_tab(df_g1, err1, "G1")
 with t7: render_vaccine_tab(df_g7, err7, "G7")
 
@@ -210,7 +293,6 @@ with t4:
         sc_col = get_school_col(df_g4)
         c1.metric("Schools/Facilities (G4)", f"{df_g4[sc_col].nunique() if sc_col else len(df_g4):,}")
         
-        # Grab ALL columns that contain HPV
         hpv_cols = [c for c in df_g4.columns if 'HPV' in c.upper()]
         
         if hpv_cols:
@@ -231,7 +313,6 @@ with t4:
                 cols_to_sum = [d1_col] if not d2_col else [d1_col, d2_col]
                 m_hpv = df_g4.groupby(muni_col)[cols_to_sum].sum().reset_index()
                 
-                # Rename for clean legends
                 rename_dict = {d1_col: 'Dose 1'}
                 if d2_col: rename_dict[d2_col] = 'Dose 2'
                 m_hpv = m_hpv.rename(columns=rename_dict)
