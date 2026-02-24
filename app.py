@@ -9,7 +9,7 @@ st.set_page_config(page_title="Abra SBI Dashboard", layout="wide", page_icon="ðŸ
 st.markdown("""
 <style>
 .custom-header {
-    background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
+    background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true'); opacity: 0.7;
     background-size: cover;
     background-position: 50% 55%;
     padding: 50px 20px;
@@ -17,7 +17,6 @@ st.markdown("""
     text-align: center;
     margin-bottom: 20px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
-    opacity: 0.7;
 }
 .custom-header h1 {
     color: white !important;
@@ -342,5 +341,6 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
 
 
