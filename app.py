@@ -1,47 +1,89 @@
-import streamlit as st
 import pandas as pd
 import plotly.express as px
+import streamlit as st
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Abra SBI Dashboard", layout="wide", page_icon="💉", initial_sidebar_state="expanded")
+# -----------------------------------------------------------------------------
+# Configuration & Constants
+# -----------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Abra SBI Dashboard", 
+    layout="wide", 
+    page_icon="💉", 
+    initial_sidebar_state="expanded"
+)
 
-# --- CUSTOM BANNER WITH OPACITY OVERLAY ---
-st.markdown("""
-<style>
-.custom-header {
-    /* We add a semi-transparent black layer (rgba 0,0,0, 0.2) over the image URL */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
-    background-size: cover;
-    background-position: 50% 55%;
-    padding: 50px 20px;
-    border-radius: 10px;
-    text-align: center;
-    margin-bottom: 20px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
-}
-.custom-header h1 {
-    color: white !important;
-    /* Since the background is darker now, we can reduce the text shadow slightly for a cleaner look */
-    text-shadow: 1px 1px 3px #000000;
-    margin: 0;
-    padding: 0;
-    font-size: 2.8rem;
-}
-.custom-header p {
-    color: #f1f2f6;
-    text-shadow: 1px 1px 2px #000000;
-    font-size: 1.2rem;
-    margin-top: 10px;
-}
-</style>
-<div class="custom-header">
-    <h1>💉 Abra School-Based Immunization Dashboard</h1>
-    <p>Official Provincial 2025 Summary • Live Google Sheets Sync</p>
-</div>
-""", unsafe_allow_html=True)
-# --- DATA CONNECTION & TIMESTAMP ---
 SHEET_ID = "1OkXvw0Rx8G2Pd1eeCaEe6SCi3axJ6qalbBL--1IQs7g"
 
+ABRA_COORDS = {
+    "BANGUED": (17.5962, 120.6133), "BANGUED (CAPITAL)": (17.5962, 120.6133),
+    "BOLINEY": (17.3820, 120.9405), "BUCAY": (17.5255, 120.7302),
+    "BUCLOC": (17.4431, 120.8404), "DAGUIOMAN": (17.4475, 120.9324),
+    "DANGLAS": (17.6586, 120.6558), "DOLORES": (17.6475, 120.7107),
+    "LA PAZ": (17.6698, 120.6725), "LACUB": (17.6669, 120.9439),
+    "LAGANGILANG": (17.6167, 120.7333), "LAGAYAN": (17.7289, 120.7364),
+    "LANGIDEN": (17.5833, 120.5667), "LICUAN-BAAY": (17.5681, 120.8872),
+    "LICUAN-BAAY (LICUAN)": (17.5681, 120.8872), "LUBA": (17.3197, 120.6975),
+    "MALIBCONG": (17.5639, 120.9908), "MANABO": (17.4333, 120.7000),
+    "PEÑARRUBIA": (17.5656, 120.6389), "PIDIGAN": (17.5750, 120.5833),
+    "PILAR": (17.4167, 120.5833), "SALLAPADAN": (17.4589, 120.7631),
+    "SAN ISIDRO": (17.4667, 120.6000), "SAN JUAN": (17.7122, 120.7411),
+    "SAN QUINTIN": (17.5447, 120.5217), "TAYUM": (17.6000, 120.6500),
+    "TINEG": (17.7806, 120.9403), "TUBO": (17.2289, 120.7936),
+    "VILLAVICIOSA": (17.4372, 120.6275)
+}
+
+# -----------------------------------------------------------------------------
+# UI Components
+# -----------------------------------------------------------------------------
+def render_header():
+    st.markdown("""
+    <style>
+    .custom-header {
+        background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
+        background-size: cover;
+        background-position: 50% 55%;
+        padding: 50px 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    .custom-header h1 {
+        color: white !important;
+        text-shadow: 1px 1px 3px #000000;
+        margin: 0;
+        padding: 0;
+        font-size: 2.8rem;
+    }
+    .custom-header p {
+        color: #f1f2f6;
+        text-shadow: 1px 1px 2px #000000;
+        font-size: 1.2rem;
+        margin-top: 10px;
+    }
+    </style>
+    <div class="custom-header">
+        <h1>💉 Abra School-Based Immunization Dashboard</h1>
+        <p>Official Provincial 2025 Summary • Live Google Sheets Sync</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_footer():
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='text-align: center; color: #888888; padding: 10px;'>
+            <p>Developed by <strong>JangTV</strong></p>
+            <img src="https://github.com/RJA24/abra-sbi-dashboard/blob/main/357094382_2458785624282603_4372984338912374777_n.png?raw=true" width="80" style="margin-top: -10px; opacity: 0.8;">
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
+# -----------------------------------------------------------------------------
+# Data Processing
+# -----------------------------------------------------------------------------
 @st.cache_data(ttl=60)
 def load_all_data():
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
@@ -52,22 +94,34 @@ def load_all_data():
     except Exception as e:
         return None, f"Connection Error: {e}", fetch_time
 
-dfs, global_err, last_synced = load_all_data()
-
-def process_sheet(sheet_name):
-    if global_err: return pd.DataFrame(), global_err
-    if dfs is None or sheet_name not in dfs: return pd.DataFrame(), f"Tab '{sheet_name}' not found."
+def process_sheet(dfs, global_err, sheet_name):
+    if global_err: 
+        return pd.DataFrame(), global_err
+    if dfs is None or sheet_name not in dfs: 
+        return pd.DataFrame(), f"Tab '{sheet_name}' not found."
+    
     df = dfs[sheet_name].copy()
     df.columns = df.columns.astype(str).str.strip()
+    
     if 'Province Name' in df.columns:
         df = df[df['Province Name'].astype(str).str.upper().str.contains('ABRA', na=False)]
     return df, None
 
-df_g1, err1 = process_sheet("Grade1")
-df_g4, err4 = process_sheet("Grade4")
-df_g7, err7 = process_sheet("Grade7")
+def get_school_col(df):
+    return next((c for c in df.columns if any(k in c.upper() for k in ['SCHOOL ID', 'FACILITY', 'SCHOOL NAME'])), None)
 
-# --- SIDEBAR CONTROLS ---
+# -----------------------------------------------------------------------------
+# Main Application
+# -----------------------------------------------------------------------------
+render_header()
+
+dfs, global_err, last_synced = load_all_data()
+
+df_g1, err1 = process_sheet(dfs, global_err, "Grade1")
+df_g4, err4 = process_sheet(dfs, global_err, "Grade4")
+df_g7, err7 = process_sheet(dfs, global_err, "Grade7")
+
+# Sidebar
 st.sidebar.header("⚙️ Dashboard Controls")
 st.sidebar.info(f"🟢 **Last Synced:**\n{last_synced}")
 
@@ -78,20 +132,13 @@ if st.sidebar.button("🔄 Force Refresh Data", use_container_width=True):
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Filter Location")
 
-# Gather all unique municipalities for the multi-select dropdown
 all_munis = set()
 for d in [df_g1, df_g4, df_g7]:
     if not d.empty and 'City/Municipality Name' in d.columns:
         all_munis.update(d['City/Municipality Name'].dropna().unique())
 
 muni_list = ["All Abra"] + sorted(list(all_munis))
-
-# THE MULTI-SELECT BOX
-selected_munis = st.sidebar.multiselect(
-    "Select Municipalities", 
-    options=muni_list,
-    default=["All Abra"]
-)
+selected_munis = st.sidebar.multiselect("Select Municipalities", options=muni_list, default=["All Abra"])
 
 if not selected_munis or "All Abra" in selected_munis:
     display_loc = "All Abra"
@@ -112,67 +159,68 @@ df_g1 = filter_df(df_g1)
 df_g4 = filter_df(df_g4)
 df_g7 = filter_df(df_g7)
 
-# --- TABS ---
-# NOTE: We added "🗺️ Map View" right next to the Summary!
+# Tabs
 tsum, tmap, t1, t4, t7 = st.tabs(["📊 Summary", "🗺️ Map View", "📘 Grade 1", "🌸 Grade 4 (HPV)", "📗 Grade 7"])
-
-def get_school_col(df):
-    return next((c for c in df.columns if 'SCHOOL ID' in c.upper() or 'FACILITY' in c.upper() or 'SCHOOL NAME' in c.upper()), None)
 
 def render_vaccine_tab(df, err, g_label):
     if err:
         st.error(f"Sheet Error: {err}")
-    elif df.empty:
+        return
+    if df.empty:
         st.warning(f"⚠️ No data found for {g_label} in {display_loc}.")
-    else:
-        mr_m = next((c for c in df.columns if 'MR' in c.upper() and 'MALE' in c.upper() and 'FEMALE' not in c.upper()), None)
-        mr_f = next((c for c in df.columns if 'MR' in c.upper() and 'FEMALE' in c.upper()), None)
-        td_m = next((c for c in df.columns if 'TD' in c.upper() and 'MALE' in c.upper() and 'FEMALE' not in c.upper()), None)
-        td_f = next((c for c in df.columns if 'TD' in c.upper() and 'FEMALE' in c.upper()), None)
-        muni_col = 'City/Municipality Name'
+        return
 
-        for c in filter(None, [mr_m, mr_f, td_m, td_f]):
-            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+    mr_m = next((c for c in df.columns if 'MR' in c.upper() and 'MALE' in c.upper() and 'FEMALE' not in c.upper()), None)
+    mr_f = next((c for c in df.columns if 'MR' in c.upper() and 'FEMALE' in c.upper()), None)
+    td_m = next((c for c in df.columns if 'TD' in c.upper() and 'MALE' in c.upper() and 'FEMALE' not in c.upper()), None)
+    td_f = next((c for c in df.columns if 'TD' in c.upper() and 'FEMALE' in c.upper()), None)
+    muni_col = 'City/Municipality Name'
 
-        c1, c2, c3 = st.columns(3)
-        sc_col = get_school_col(df)
-        c1.metric("Schools/Facilities", f"{df[sc_col].nunique() if sc_col else len(df):,}")
+    for col in filter(None, [mr_m, mr_f, td_m, td_f]):
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+    c1, c2, c3 = st.columns(3)
+    sc_col = get_school_col(df)
+    c1.metric("Schools/Facilities", f"{df[sc_col].nunique() if sc_col else len(df):,}")
+    
+    tot_mr = int(df[mr_m].sum() + df[mr_f].sum()) if mr_m and mr_f else 0
+    tot_td = int(df[td_m].sum() + df[td_f].sum()) if td_m and td_f else 0
+    c2.metric("Total MR", f"{tot_mr:,}")
+    c3.metric("Total TD", f"{tot_td:,}")
+
+    if muni_col in df.columns and all([mr_m, mr_f, td_m, td_f]):
+        m_data = df.groupby(muni_col)[[mr_m, mr_f, td_m, td_f]].sum().reset_index()
+        m_data = m_data.rename(columns={mr_m: 'MR (Male)', td_m: 'TD (Male)', mr_f: 'MR (Female)', td_f: 'TD (Female)'})
+        m_data['Total MR'] = m_data['MR (Male)'] + m_data['MR (Female)']
+        m_data['Total TD'] = m_data['TD (Male)'] + m_data['TD (Female)']
+
+        csv = m_data.to_csv(index=False).encode('utf-8')
+        st.download_button(label=f"📥 Download {g_label} Summary Report (CSV)", data=csv, file_name=f"{g_label}_{display_loc.replace(' ', '_')}_summary.csv", mime='text/csv')
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_a, col_b = st.columns(2)
         
-        tot_mr = int(df[mr_m].sum() + df[mr_f].sum()) if mr_m and mr_f else 0
-        tot_td = int(df[td_m].sum() + df[td_f].sum()) if td_m and td_f else 0
-        c2.metric("Total MR", f"{tot_mr:,}")
-        c3.metric("Total TD", f"{tot_td:,}")
-
-        if muni_col in df.columns and all([mr_m, mr_f, td_m, td_f]):
-            m_data = df.groupby(muni_col)[[mr_m, mr_f, td_m, td_f]].sum().reset_index()
-            m_data = m_data.rename(columns={mr_m: 'MR (Male)', td_m: 'TD (Male)', mr_f: 'MR (Female)', td_f: 'TD (Female)'})
-            m_data['Total MR'] = m_data['MR (Male)'] + m_data['MR (Female)']
-            m_data['Total TD'] = m_data['TD (Male)'] + m_data['TD (Female)']
-
-            csv = m_data.to_csv(index=False).encode('utf-8')
-            st.download_button(label=f"📥 Download {g_label} Summary Report (CSV)", data=csv, file_name=f"{g_label}_{display_loc.replace(' ', '_')}_summary.csv", mime='text/csv')
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            cola, colb = st.columns(2)
-            with cola:
-                fig_m = px.bar(m_data, x=muni_col, y=['MR (Male)', 'TD (Male)'], barmode='group', text_auto=True, title=f"Male Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
-                fig_m.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
-                fig_m.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
-                st.plotly_chart(fig_m, use_container_width=True, key=f"m_{g_label}")
-            with colb:
-                fig_f = px.bar(m_data, x=muni_col, y=['MR (Female)', 'TD (Female)'], barmode='group', text_auto=True, title=f"Female Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
-                fig_f.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
-                fig_f.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
-                st.plotly_chart(fig_f, use_container_width=True, key=f"f_{g_label}")
+        with col_a:
+            fig_m = px.bar(m_data, x=muni_col, y=['MR (Male)', 'TD (Male)'], barmode='group', text_auto=True, title=f"Male Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
+            fig_m.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
+            fig_m.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
+            st.plotly_chart(fig_m, use_container_width=True, key=f"m_{g_label}")
             
-            fig_tot = px.bar(m_data, x=muni_col, y=['Total MR', 'Total TD'], barmode='group', text_auto=True, title=f"Grand Total ({g_label})", color_discrete_sequence=['#43A047', '#FFB300'])
-            fig_tot.update_layout(legend_title_text='Total Vaccines', yaxis_title='Doses')
-            fig_tot.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
-            st.plotly_chart(fig_tot, use_container_width=True, key=f"tot_{g_label}")
+        with col_b:
+            fig_f = px.bar(m_data, x=muni_col, y=['MR (Female)', 'TD (Female)'], barmode='group', text_auto=True, title=f"Female Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
+            fig_f.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
+            fig_f.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
+            st.plotly_chart(fig_f, use_container_width=True, key=f"f_{g_label}")
+        
+        fig_tot = px.bar(m_data, x=muni_col, y=['Total MR', 'Total TD'], barmode='group', text_auto=True, title=f"Grand Total ({g_label})", color_discrete_sequence=['#43A047', '#FFB300'])
+        fig_tot.update_layout(legend_title_text='Total Vaccines', yaxis_title='Doses')
+        fig_tot.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
+        st.plotly_chart(fig_tot, use_container_width=True, key=f"tot_{g_label}")
 
-# --- SUMMARY TAB ---
+# Tab: Summary
 with tsum:
     st.subheader(f"Cumulative Totals ({display_loc})")
+    
     def get_val(df, k1, k2=None):
         if df.empty: return 0
         t = next((c for c in df.columns if k1 in c.upper() and (k2 in c.upper() if k2 else True)), None)
@@ -217,29 +265,10 @@ with tsum:
             fig_vax.update_traces(textposition='inside', textinfo='percent+label', textfont_size=14)
             st.plotly_chart(fig_vax, use_container_width=True, key="pie_vax")
 
-# --- MAP TAB ---
+# Tab: Map View
 with tmap:
     st.subheader(f"📍 Vaccination Density Map ({display_loc})")
     st.markdown("Geographic distribution of all administered doses (MR, TD, and HPV combined). Larger bubbles indicate higher vaccination counts.")
-    
-    # Internal Coordinate System for Abra Municipalities
-    ABRA_COORDS = {
-        "BANGUED": (17.5962, 120.6133), "BANGUED (CAPITAL)": (17.5962, 120.6133),
-        "BOLINEY": (17.3820, 120.9405), "BUCAY": (17.5255, 120.7302),
-        "BUCLOC": (17.4431, 120.8404), "DAGUIOMAN": (17.4475, 120.9324),
-        "DANGLAS": (17.6586, 120.6558), "DOLORES": (17.6475, 120.7107),
-        "LA PAZ": (17.6698, 120.6725), "LACUB": (17.6669, 120.9439),
-        "LAGANGILANG": (17.6167, 120.7333), "LAGAYAN": (17.7289, 120.7364),
-        "LANGIDEN": (17.5833, 120.5667), "LICUAN-BAAY": (17.5681, 120.8872),
-        "LICUAN-BAAY (LICUAN)": (17.5681, 120.8872), "LUBA": (17.3197, 120.6975),
-        "MALIBCONG": (17.5639, 120.9908), "MANABO": (17.4333, 120.7000),
-        "PEÑARRUBIA": (17.5656, 120.6389), "PIDIGAN": (17.5750, 120.5833),
-        "PILAR": (17.4167, 120.5833), "SALLAPADAN": (17.4589, 120.7631),
-        "SAN ISIDRO": (17.4667, 120.6000), "SAN JUAN": (17.7122, 120.7411),
-        "SAN QUINTIN": (17.5447, 120.5217), "TAYUM": (17.6000, 120.6500),
-        "TINEG": (17.7806, 120.9403), "TUBO": (17.2289, 120.7936),
-        "VILLAVICIOSA": (17.4372, 120.6275)
-    }
     
     map_df = pd.DataFrame()
     for d in [df_g1, df_g4, df_g7]:
@@ -255,11 +284,9 @@ with tmap:
         
         map_data['Lat'] = map_data['City/Municipality Name'].str.strip().str.upper().map(lambda x: ABRA_COORDS.get(x, (None, None))[0])
         map_data['Lon'] = map_data['City/Municipality Name'].str.strip().str.upper().map(lambda x: ABRA_COORDS.get(x, (None, None))[1])
-        
         map_data_clean = map_data.dropna(subset=['Lat', 'Lon'])
         
         if not map_data_clean.empty:
-            # Create a glowing dark-theme bubble map!
             fig_map = px.scatter_mapbox(
                 map_data_clean, 
                 lat="Lat", lon="Lon", 
@@ -279,11 +306,11 @@ with tmap:
     else:
         st.warning("No data available to map yet.")
 
-
+# Tab: Grade 1 & 7
 with t1: render_vaccine_tab(df_g1, err1, "G1")
 with t7: render_vaccine_tab(df_g7, err7, "G7")
 
-# --- GRADE 4 TAB ---
+# Tab: Grade 4
 with t4:
     if err4:
         st.error(f"Sheet Error: {err4}")
@@ -331,21 +358,4 @@ with t4:
             c3.metric("", "")
             st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab. Please check your headers.")
 
-# --- FOOTER ---
-st.markdown("---")
-st.markdown(
-    """
-    <div style='text-align: center; color: #888888; padding: 10px;'>
-        <p>Developed by <strong>JangTV</strong></p>
-        <img src="https://github.com/RJA24/abra-sbi-dashboard/blob/main/357094382_2458785624282603_4372984338912374777_n.png?raw=true" width="80" style="margin-top: -10px; opacity: 0.8;">
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
-
-
-
-
-
-
-
+render_footer()
