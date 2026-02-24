@@ -10,7 +10,7 @@ st.markdown("""
 .custom-header {
     background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
     background-size: cover;
-    background-position: top;
+    background-position: Bottom;
     padding: 50px 20px;
     border-radius: 10px;
     text-align: center;
@@ -190,6 +190,7 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
 
 
 
