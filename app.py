@@ -34,7 +34,7 @@ st.markdown("""
 
 <div class="custom-header">
     <h1>💉 Abra School-Based Immunization Dashboard</h1>
-    <p>Official Provincial Summary • Live Google Sheets Sync</p>
+    <p>Official Provincial 2025 Summary • Live Google Sheets Sync</p>
 </div>
 """, unsafe_allow_html=True)
 SHEET_ID = "1OkXvw0Rx8G2Pd1eeCaEe6SCi3axJ6qalbBL--1IQs7g"
@@ -180,3 +180,4 @@ with t4:
             c2.metric("Total HPV (Abra)", "0")
 
             st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab. Please check your Google Sheet headers.")
+
