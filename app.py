@@ -8,7 +8,7 @@ st.markdown("""
 <style>
 .custom-header {
     /* You can replace this URL with a link to your own custom image! */
-    background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg');
+    background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
     background-size: cover;
     background-position: center;
     padding: 50px 20px;
