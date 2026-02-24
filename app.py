@@ -181,3 +181,13 @@ with t4:
 
             st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab. Please check your Google Sheet headers.")
 
+# --- FOOTER ---
+st.markdown("---") # Draws a neat horizontal line
+st.markdown(
+    """
+    <div style='text-align: center; color: #888888; padding: 10px;'>
+        <p>Developed by <strong>[Your Name Here]</strong></p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
