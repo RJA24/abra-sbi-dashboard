@@ -5,11 +5,12 @@ from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Abra SBI Dashboard", layout="wide", page_icon="💉", initial_sidebar_state="expanded")
 
-# --- CUSTOM BANNER ---
+# --- CUSTOM BANNER WITH OPACITY OVERLAY ---
 st.markdown("""
 <style>
 .custom-header {
-    background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true'); image opacity: 0.7;
+    /* We add a semi-transparent black layer (rgba 0,0,0, 0.5) over the image URL */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
     background-size: cover;
     background-position: 50% 55%;
     padding: 50px 20px;
@@ -20,14 +21,15 @@ st.markdown("""
 }
 .custom-header h1 {
     color: white !important;
-    text-shadow: 2px 2px 4px #000000;
+    /* Since the background is darker now, we can reduce the text shadow slightly for a cleaner look */
+    text-shadow: 1px 1px 3px #000000;
     margin: 0;
     padding: 0;
     font-size: 2.8rem;
 }
 .custom-header p {
     color: #f1f2f6;
-    text-shadow: 1px 1px 3px #000000;
+    text-shadow: 1px 1px 2px #000000;
     font-size: 1.2rem;
     margin-top: 10px;
 }
@@ -37,7 +39,6 @@ st.markdown("""
     <p>Official Provincial 2025 Summary • Live Google Sheets Sync</p>
 </div>
 """, unsafe_allow_html=True)
-
 # --- DATA CONNECTION & TIMESTAMP ---
 SHEET_ID = "1OkXvw0Rx8G2Pd1eeCaEe6SCi3axJ6qalbBL--1IQs7g"
 
@@ -341,6 +342,7 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
 
 
 
