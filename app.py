@@ -185,8 +185,9 @@ st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #888888; padding: 10px;'>
-        <p>Developed by <strong>Data Controller III</strong></p>
+        <p>Developed by <strong>JangTV</strong></p>
     </div>
     """, 
     unsafe_allow_html=True
 )
+
