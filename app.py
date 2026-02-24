@@ -3,8 +3,40 @@ import pandas as pd
 import plotly.express as px
 
 st.set_page_config(page_title="Abra SBI Dashboard", layout="wide", page_icon="💉")
-st.title("💉 Abra School-Based Immunization (SBI) Dashboard 2025")
+# Add this custom HTML/CSS header block instead:
+st.markdown("""
+<style>
+.custom-header {
+    /* You can replace this URL with a link to your own custom image! */
+    background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg');
+    background-size: cover;
+    background-position: center;
+    padding: 50px 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 25px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+}
+.custom-header h1 {
+    color: white !important;
+    text-shadow: 2px 2px 4px #000000; /* Adds a shadow so text is readable over any picture */
+    margin: 0;
+    padding: 0;
+    font-size: 2.8rem;
+}
+.custom-header p {
+    color: #f1f2f6;
+    text-shadow: 1px 1px 3px #000000;
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+</style>
 
+<div class="custom-header">
+    <h1>💉 Abra School-Based Immunization Dashboard</h1>
+    <p>Official Provincial Summary • Live Google Sheets Sync</p>
+</div>
+""", unsafe_allow_html=True)
 SHEET_ID = "1OkXvw0Rx8G2Pd1eeCaEe6SCi3axJ6qalbBL--1IQs7g"
 
 # --- Master Excel Downloader ---
@@ -146,4 +178,5 @@ with t4:
                 st.plotly_chart(fig_hpv, use_container_width=True, key="hpv_unique_plot")
         else:
             c2.metric("Total HPV (Abra)", "0")
+
             st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab. Please check your Google Sheet headers.")
