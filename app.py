@@ -11,7 +11,7 @@ st.markdown("""
 .custom-header {
     background-image: url('https://github.com/RJA24/abra-sbi-dashboard/blob/main/EO8tVxSUUAEazoD.jpg?raw=true');
     background-size: cover;
-    background-position: 50% 55%;
+    background-position: center;
     padding: 50px 20px;
     border-radius: 10px;
     text-align: center;
@@ -44,7 +44,6 @@ SHEET_ID = "1OkXvw0Rx8G2Pd1eeCaEe6SCi3axJ6qalbBL--1IQs7g"
 @st.cache_data(ttl=60)
 def load_all_data():
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
-    # Calculate Philippine Standard Time (UTC+8)
     fetch_time = (datetime.utcnow() + timedelta(hours=8)).strftime("%B %d, %Y at %I:%M %p")
     try:
         dfs = pd.read_excel(url, sheet_name=None)
@@ -78,20 +77,34 @@ if st.sidebar.button("🔄 Force Refresh Data", use_container_width=True):
 st.sidebar.markdown("---")
 st.sidebar.subheader("📍 Filter Location")
 
-# Gather all unique municipalities for the dropdown
+# Gather all unique municipalities for the multi-select dropdown
 all_munis = set()
 for d in [df_g1, df_g4, df_g7]:
     if not d.empty and 'City/Municipality Name' in d.columns:
         all_munis.update(d['City/Municipality Name'].dropna().unique())
 
-muni_list = ["All Abra"] + sorted(list(all_munis))
-selected_muni = st.sidebar.selectbox("Select Municipality", muni_list)
+muni_list = sorted(list(all_munis))
 
-# Function to filter data based on selection
+# THE NEW MULTI-SELECT BOX
+selected_munis = st.sidebar.multiselect(
+    "Select Municipalities (Leave blank for all)", 
+    options=muni_list,
+    default=[]
+)
+
+# Dynamic Display Name for titles and downloads
+if not selected_munis:
+    display_loc = "All Abra"
+elif len(selected_munis) <= 2:
+    display_loc = " & ".join(selected_munis)
+else:
+    display_loc = f"{len(selected_munis)} Municipalities"
+
+# Updated filter function using .isin() for multiple selections
 def filter_df(df):
-    if selected_muni == "All Abra" or df.empty or 'City/Municipality Name' not in df.columns:
+    if not selected_munis or df.empty or 'City/Municipality Name' not in df.columns:
         return df
-    return df[df['City/Municipality Name'] == selected_muni]
+    return df[df['City/Municipality Name'].isin(selected_munis)]
 
 df_g1 = filter_df(df_g1)
 df_g4 = filter_df(df_g4)
@@ -107,7 +120,7 @@ def render_vaccine_tab(df, err, g_label):
     if err:
         st.error(f"Sheet Error: {err}")
     elif df.empty:
-        st.warning(f"⚠️ No data found for {g_label} in {selected_muni}.")
+        st.warning(f"⚠️ No data found for {g_label} in {display_loc}.")
     else:
         mr_m = next((c for c in df.columns if 'MR' in c.upper() and 'MALE' in c.upper() and 'FEMALE' not in c.upper()), None)
         mr_f = next((c for c in df.columns if 'MR' in c.upper() and 'FEMALE' in c.upper()), None)
@@ -135,7 +148,7 @@ def render_vaccine_tab(df, err, g_label):
 
             # Download Button
             csv = m_data.to_csv(index=False).encode('utf-8')
-            st.download_button(label=f"📥 Download {g_label} Summary Report (CSV)", data=csv, file_name=f"{g_label}_{selected_muni}_summary.csv", mime='text/csv')
+            st.download_button(label=f"📥 Download {g_label} Summary Report (CSV)", data=csv, file_name=f"{g_label}_{display_loc}_summary.csv", mime='text/csv')
 
             st.markdown("<br>", unsafe_allow_html=True)
             cola, colb = st.columns(2)
@@ -157,7 +170,7 @@ def render_vaccine_tab(df, err, g_label):
 
 # --- SUMMARY TAB ---
 with tsum:
-    st.subheader(f"Cumulative Totals ({selected_muni})")
+    st.subheader(f"Cumulative Totals ({display_loc})")
     def get_val(df, k1, k2=None):
         if df.empty: return 0
         t = next((c for c in df.columns if k1 in c.upper() and (k2 in c.upper() if k2 else True)), None)
@@ -185,7 +198,7 @@ with t4:
     if err4:
         st.error(f"Sheet Error: {err4}")
     elif df_g4.empty:
-        st.warning(f"⚠️ No data found for Grade 4 in {selected_muni}.")
+        st.warning(f"⚠️ No data found for Grade 4 in {display_loc}.")
     else:
         c1, c2 = st.columns(2)
         sc_col = get_school_col(df_g4)
@@ -203,7 +216,7 @@ with t4:
                 
                 # Download Button for HPV
                 csv_hpv = m_hpv.to_csv(index=False).encode('utf-8')
-                st.download_button(label="📥 Download Grade 4 Summary Report (CSV)", data=csv_hpv, file_name=f"G4_{selected_muni}_summary.csv", mime='text/csv')
+                st.download_button(label="📥 Download Grade 4 Summary Report (CSV)", data=csv_hpv, file_name=f"G4_{display_loc}_summary.csv", mime='text/csv')
                 
                 fig_hpv = px.bar(m_hpv, x=muni_col, y='HPV Doses', text_auto=True, title="HPV by Municipality", color_discrete_sequence=['#8E24AA'])
                 fig_hpv.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
@@ -211,7 +224,6 @@ with t4:
         else:
             c2.metric("Total HPV", "0")
             st.error("⚠️ Could not find an 'HPV' column in the Grade 4 tab.")
-
 # --- FOOTER ---
 st.markdown("---")
 st.markdown(
@@ -223,6 +235,7 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
 
 
 
