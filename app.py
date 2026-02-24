@@ -186,11 +186,12 @@ st.markdown(
     """
     <div style='text-align: center; color: #888888; padding: 10px;'>
         <p>Developed by <strong>JangTV</strong></p>
-        <img src="https://github.com/RJA24/abra-sbi-dashboard/blob/main/357094382_2458785624282603_4372984338912374777_n.png?raw=true" width="80" style="margin-top: 0px; opacity: 0.8;">
+        <img src="https://github.com/RJA24/abra-sbi-dashboard/blob/main/357094382_2458785624282603_4372984338912374777_n.png?raw=true" width="80" style="margin-top: -5px; opacity: 0.8;">
     </div>
     """, 
     unsafe_allow_html=True
 )
+
 
 
 
