@@ -112,17 +112,17 @@ def render_vaccine_tab(df, err, g_label):
 
             cola, colb = st.columns(2)
             with cola:
-                fig_m = px.bar(m_data, x=muni_col, y=['MR (Male)', 'TD (Male)'], barmode='group', text_auto=True, title=f"Male Vaccinations ({g_label})")
+                fig_m = px.bar(m_data, x=muni_col, y=['MR (Male)', 'TD (Male)'], barmode='group', text_auto=True, title=f"Male Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
                 fig_m.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
                 fig_m.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
                 st.plotly_chart(fig_m, use_container_width=True, key=f"m_{g_label}")
             with colb:
-                fig_f = px.bar(m_data, x=muni_col, y=['MR (Female)', 'TD (Female)'], barmode='group', text_auto=True, title=f"Female Vaccinations ({g_label})")
+                fig_f = px.bar(m_data, x=muni_col, y=['MR (Female)', 'TD (Female)'], barmode='group', text_auto=True, title=f"Female Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
                 fig_f.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
                 fig_f.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
                 st.plotly_chart(fig_f, use_container_width=True, key=f"f_{g_label}")
             
-            fig_tot = px.bar(m_data, x=muni_col, y=['Total MR', 'Total TD'], barmode='group', text_auto=True, title=f"Grand Total ({g_label})")
+            fig_tot = px.bar(m_data, x=muni_col, y=['Total MR', 'Total TD'], barmode='group', text_auto=True, title=f"Grand Total ({g_label})", color_discrete_sequence=['#43A047', '#FFB300'])
             fig_tot.update_layout(legend_title_text='Total Vaccines', yaxis_title='Doses')
             fig_tot.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
             st.plotly_chart(fig_tot, use_container_width=True, key=f"tot_{g_label}")
@@ -173,7 +173,7 @@ with t4:
             if muni_col in df_g4.columns:
                 m_hpv = df_g4.groupby(muni_col)[hpv_c].sum().reset_index()
                 m_hpv = m_hpv.rename(columns={hpv_c: 'HPV Doses'})
-                fig_hpv = px.bar(m_hpv, x=muni_col, y='HPV Doses', text_auto=True, title="HPV by Municipality", color_discrete_sequence=['#e84393'])
+                fig_hpv = px.bar(m_hpv, x=muni_col, y='HPV Doses', text_auto=True, title="HPV by Municipality", color_discrete_sequence=['#8E24AA'])
                 fig_hpv.update_traces(textfont_size=16, textposition='outside', cliponaxis=False) # Fix applied here!
                 st.plotly_chart(fig_hpv, use_container_width=True, key="hpv_unique_plot")
         else:
@@ -190,4 +190,5 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
 
