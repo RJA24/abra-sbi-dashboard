@@ -17,7 +17,7 @@ st.markdown("""
     text-align: center;
     margin-bottom: 20px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
-    opacity 80%;
+    opacity: 0.7;
 }
 .custom-header h1 {
     color: white !important;
@@ -342,4 +342,5 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
 
