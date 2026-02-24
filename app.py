@@ -204,18 +204,18 @@ def render_vaccine_tab(df, err, g_label):
             fig_m = px.bar(m_data, x=muni_col, y=['MR (Male)', 'TD (Male)'], barmode='group', text_auto=True, title=f"Male Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
             fig_m.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
             fig_m.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
-            st.plotly_chart(fig_m, use_container_width=True, key=f"m_{g_label}")
+            st.plotly_chart(fig_m, use_container_width=True)
             
         with col_b:
             fig_f = px.bar(m_data, x=muni_col, y=['MR (Female)', 'TD (Female)'], barmode='group', text_auto=True, title=f"Female Vaccinations ({g_label})", color_discrete_sequence=['#1E88E5', '#D81B60'])
             fig_f.update_layout(legend_title_text='Vaccine Type', yaxis_title='Doses')
             fig_f.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
-            st.plotly_chart(fig_f, use_container_width=True, key=f"f_{g_label}")
+            st.plotly_chart(fig_f, use_container_width=True)
         
         fig_tot = px.bar(m_data, x=muni_col, y=['Total MR', 'Total TD'], barmode='group', text_auto=True, title=f"Grand Total ({g_label})", color_discrete_sequence=['#43A047', '#FFB300'])
         fig_tot.update_layout(legend_title_text='Total Vaccines', yaxis_title='Doses')
         fig_tot.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
-        st.plotly_chart(fig_tot, use_container_width=True, key=f"tot_{g_label}")
+        st.plotly_chart(fig_tot, use_container_width=True)
 
 # Tab: Summary
 with tsum:
@@ -256,14 +256,14 @@ with tsum:
         if df_gender['Doses'].sum() > 0:
             fig_gender = px.pie(df_gender, names='Gender', values='Doses', title="MR & TD by Gender", hole=0.4, color='Gender', color_discrete_map={'Male':'#1E88E5', 'Female':'#D81B60'})
             fig_gender.update_traces(textposition='inside', textinfo='percent+label', textfont_size=14)
-            st.plotly_chart(fig_gender, use_container_width=True, key="pie_gender")
+            st.plotly_chart(fig_gender, use_container_width=True)
             
     with pc2:
         df_vax = pd.DataFrame({'Vaccine': ['MR', 'TD', 'HPV'], 'Doses': [total_mr, total_td, total_hpv]})
         if df_vax['Doses'].sum() > 0:
             fig_vax = px.pie(df_vax, names='Vaccine', values='Doses', title="Overall Vaccine Distribution", hole=0.4, color='Vaccine', color_discrete_map={'MR':'#43A047', 'TD':'#FFB300', 'HPV':'#8E24AA'})
             fig_vax.update_traces(textposition='inside', textinfo='percent+label', textfont_size=14)
-            st.plotly_chart(fig_vax, use_container_width=True, key="pie_vax")
+            st.plotly_chart(fig_vax, use_container_width=True)
 
 # Tab: Map View
 with tmap:
@@ -297,9 +297,13 @@ with tmap:
                 size_max=40,
                 zoom=8.5, 
                 center={"lat": 17.58, "lon": 120.61},
-                mapbox_style="carto-darkmatter"
+                mapbox_style="carto-darkmatter",
+                height=700 # <-- Fixed the height right here!
             )
-            fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+            fig_map.update_layout(
+                margin={"r":0,"t":0,"l":0,"b":0},
+                autosize=True
+            )
             st.plotly_chart(fig_map, use_container_width=True)
         else:
             st.info("No matching map coordinates found for the selected area.")
@@ -352,7 +356,7 @@ with t4:
                 fig_hpv = px.bar(m_hpv, x=muni_col, y=y_cols, barmode='group', text_auto=True, title="HPV Vaccinations by Municipality", color_discrete_sequence=['#8E24AA', '#E53935'])
                 fig_hpv.update_layout(legend_title_text='Dose Number', yaxis_title='Doses')
                 fig_hpv.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
-                st.plotly_chart(fig_hpv, use_container_width=True, key="hpv_plot")
+                st.plotly_chart(fig_hpv, use_container_width=True)
         else:
             c2.metric("Total HPV", "0")
             c3.metric("", "")
